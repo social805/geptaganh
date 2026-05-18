@@ -73,7 +73,7 @@
             <div><h2 style="margin-bottom:8px">Định dạng đầu ra</h2><div class="seg"><button id="jpgBtn" class="active" type="button">JPG</button><button id="pngBtn" type="button">PNG</button><button id="webpBtn" type="button">WebP</button></div></div>
             <button id="processBtn" class="btn" disabled>Geotag ảnh</button>
           </div>
-          <p class="notice">JPG sẽ được ghi EXIF GPS bằng piexifjs. PNG sẽ được ghi metadata dạng text chunks. WebP sẽ xuất ảnh WebP đã xử lý; metadata WebP trong trình duyệt có giới hạn nên nên dùng JPG nếu cần GPS EXIF chuẩn.</p>
+          <p class="notice">JPG sẽ được ghi EXIF GPS chuẩn. PNG sẽ được ghi metadata dạng text chunks UTF-8. WebP sẽ xuất ảnh WebP đã xử lý; nếu cần kiểm tra GPS EXIF chuẩn nhất hãy dùng JPG.</p>
         </div>
         <div class="card">
           <h2>Danh sách ảnh</h2>
@@ -117,6 +117,11 @@ function renderFiles(){ if(!files.length){ fileList.innerHTML='<p class="status"
 function formatBytes(n){ return n<1024? n+' B' : n<1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(1)+' MB'; }
 function slugFilePart(s){ return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^a-zA-Z0-9._ -]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-'); }
 function buildOutputBaseName(originalName, title){ const originalBase = originalName.replace(/\.[^.]+$/,''); const safeOriginal = slugFilePart(originalBase) || 'image'; const safeTitle = slugFilePart(title); return safeTitle ? safeTitle + '-' + safeOriginal : safeOriginal; }
+function latinSafe(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^\x20-\x7E]/g,''); }
+function utf16leBytes(str){ const out=[]; str=String(str || ''); for(let i=0;i<str.length;i++){ const c=str.charCodeAt(i); out.push(c & 255, c >> 8); } out.push(0,0); return out; }
+function asciiBytes(str){ str=String(str || ''); const out=[]; for(let i=0;i<str.length;i++) out.push(str.charCodeAt(i) & 255); return out; }
+function slugFilePart(s){ return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^a-zA-Z0-9._ -]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-'); }
+function buildOutputBaseName(originalName, title){ const originalBase = originalName.replace(/\.[^.]+$/,''); const safeOriginal = slugFilePart(originalBase) || 'image'; const safeTitle = slugFilePart(title); return safeTitle ? safeTitle + '-' + safeOriginal : safeOriginal; }
 function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function meta(){ return {lat:+$('lat').value,lng:+$('lng').value,title:$('title').value.trim(),subject:$('subject').value.trim(),keywords:$('keywords').value.trim(),copyright:$('copyright').value.trim(),author:$('author').value.trim(),date:$('date').value,comment:$('comment').value.trim(),rating}; }
 async function processAll(){ if(!validCoords()) return showErr('Toạ độ không hợp lệ.'); results=[]; verifyEl.style.display='none'; verifyEl.innerHTML=''; statusEl.textContent='Đang xử lý...'; processBtn.disabled=true; try{ for(let i=0;i<files.length;i++){ statusEl.textContent=`Đang geotag ${i+1}/${files.length}: ${files[i].name}`; results.push(await processImage(files[i], meta(), output)); } renderResults(); renderVerify(meta(), output); zipBtn.disabled = results.length < 2; }catch(e){ showErr(e.message || String(e)); } finally{ updateButtons(); } }
@@ -137,42 +142,16 @@ function buildExif(m){ const zeroth={}, exif={}, gps={};
   const comment = m.comment || '';
   const copyright = m.copyright || '';
 
-  if(title) zeroth[piexif.ImageIFD.ImageDescription] = title;
-  if(author) zeroth[piexif.ImageIFD.Artist] = author;
-  if(copyright) zeroth[piexif.ImageIFD.Copyright] = copyright;
+  // Các tag chuẩn EXIF chỉ nhận Latin1/ASCII ổn định, nên bỏ dấu để tránh lỗi btoa.
+  if(title) zeroth[piexif.ImageIFD.ImageDescription] = latinSafe(title);
+  if(author) zeroth[piexif.ImageIFD.Artist] = latinSafe(author);
+  if(copyright) zeroth[piexif.ImageIFD.Copyright] = latinSafe(copyright);
 
-  // Windows Explorer reads these XP* tags in Details tab
+  // Windows Explorer đọc tốt nhóm XP* dạng UTF-16LE, giữ được tiếng Việt.
   if(title) zeroth[40091] = utf16leBytes(title);       // XPTitle
   if(comment) zeroth[40092] = utf16leBytes(comment);   // XPComment
   if(author) zeroth[40093] = utf16leBytes(author);     // XPAuthor
   if(keywords) zeroth[40094] = utf16leBytes(keywords); // XPKeywords / Tags
   if(subject) zeroth[40095] = utf16leBytes(subject);   // XPSubject
 
-  if(comment) exif[piexif.ExifIFD.UserComment] = asciiBytes('ASCII\0\0\0' + comment);
-  if(m.date) exif[piexif.ExifIFD.DateTimeOriginal] = m.date.replaceAll('-',':') + ' 00:00:00';
-
-  gps[piexif.GPSIFD.GPSVersionID] = [2,3,0,0];
-  gps[piexif.GPSIFD.GPSLatitudeRef] = m.lat < 0 ? 'S' : 'N';
-  gps[piexif.GPSIFD.GPSLatitude] = toDmsRational(Math.abs(m.lat));
-  gps[piexif.GPSIFD.GPSLongitudeRef] = m.lng < 0 ? 'W' : 'E';
-  gps[piexif.GPSIFD.GPSLongitude] = toDmsRational(Math.abs(m.lng));
-  gps[piexif.GPSIFD.GPSMapDatum] = 'WGS-84';
-  if(m.date) gps[piexif.GPSIFD.GPSDateStamp] = m.date.replaceAll('-',':');
-
-  return {'0th':zeroth, Exif:exif, GPS:gps, '1st':{}, thumbnail:null};
-}
-function toDmsRational(dec){ const deg=Math.floor(dec); const minFloat=(dec-deg)*60; const min=Math.floor(minFloat); const sec=(minFloat-min)*60; return [[deg,1],[min,1],[Math.round(sec*10000),10000]]; }
-function buildPngText(m){ return {Title:m.title,Subject:m.subject,Keywords:m.keywords,Author:m.author,Copyright:m.copyright,Comment:m.comment,Rating:String(m.rating||''),DateCreated:m.date,GPSLatitude:String(m.lat),GPSLongitude:String(m.lng),GPSPosition:`${m.lat},${m.lng}`,GPSMapDatum:'WGS-84'}; }
-function insertPngTextChunks(bytes, pairs){ const sig=bytes.slice(0,8); const chunks=[]; let p=8; while(p<bytes.length){ const len=readU32(bytes,p); const type=String.fromCharCode(...bytes.slice(p+4,p+8)); if(type==='IEND'){ Object.entries(pairs).filter(([,v])=>v).forEach(([k,v])=>chunks.push(makeChunk('tEXt', latin1(k+'\0'+v)))); } chunks.push(bytes.slice(p,p+12+len)); p += 12+len; } return concat([sig,...chunks]); }
-function readU32(b,p){ return ((b[p]<<24)|(b[p+1]<<16)|(b[p+2]<<8)|b[p+3])>>>0; }
-function writeU32(n){ return new Uint8Array([(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]); }
-function latin1(s){ const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i)&255; return u; }
-function makeChunk(type, data){ const t=latin1(type); const crc=crc32(concat([t,data])); return concat([writeU32(data.length),t,data,writeU32(crc)]); }
-function concat(arrs){ const len=arrs.reduce((a,b)=>a+b.length,0); const out=new Uint8Array(len); let o=0; arrs.forEach(a=>{out.set(a,o);o+=a.length}); return out; }
-let crcTable=null; function crc32(buf){ if(!crcTable){ crcTable=Array.from({length:256},(_,n)=>{ let c=n; for(let k=0;k<8;k++) c=((c&1)?(0xedb88320^(c>>>1)):(c>>>1)); return c>>>0; }); } let c=0xffffffff; for(const b of buf) c=crcTable[(c^b)&255]^(c>>>8); return (c^0xffffffff)>>>0; }
-function renderVerify(m, type){ verifyEl.style.display='block'; const gpsText = `${m.lat}, ${m.lng}`; const note = type === 'jpg' ? 'JPG đã được ghi GPS EXIF chuẩn. Trong Windows Properties, hãy kéo xuống gần cuối tab Details để xem mục GPS.' : 'Định dạng này không được Windows hiển thị GPS EXIF chuẩn như JPG. Hãy dùng JPG để kiểm tra GPS chắc nhất.'; verifyEl.innerHTML = `<b>Kiểm tra sau xử lý:</b><br>Đã ghi GPS: <b>${gpsText}</b><br>Định dạng xuất: <b>${type.toUpperCase()}</b><br>${note}`; }
-function renderResults(){ statusEl.innerHTML = `<b>Hoàn tất ${results.length} ảnh.</b><br>` + results.map(r=>`<a class="downloadLink" download="${r.name}" href="${r.url}">Tải ${r.name}</a>`).join('<br>'); }
-async function downloadZip(){ const zip = new JSZip(); results.forEach(r=>zip.file(r.name, r.blob)); const blob = await zip.generateAsync({type:'blob'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='geotag-images.zip'; a.click(); }
-</script>
-</body>
-</html>
+  if(comment) exif[piexif.ExifIFD.UserComment] = asciiBytes('ASCII

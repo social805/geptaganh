@@ -1,2 +1,178 @@
-# geptaganh
-hihiheeh
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tool Geotag Ảnh SEO Local</title>
+  <meta name="description" content="Gắn GPS và metadata SEO vào ảnh JPG/PNG ngay trên trình duyệt." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root{--bg:#f6fbf8;--card:#ffffff;--text:#163229;--muted:#64756f;--line:#dce9e3;--green:#16a34a;--green2:#0f8a3c;--soft:#eaf8ef;--danger:#dc2626;--shadow:0 18px 45px rgba(18,79,47,.09);}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background:radial-gradient(circle at top left,#dff8e9,transparent 38%),var(--bg)}
+    .wrap{max-width:1120px;margin:auto;padding:28px 18px 48px}.hero{padding:28px 0 18px}.back{color:var(--muted);font-size:14px;text-decoration:none}.titleRow{display:flex;gap:16px;align-items:center;margin-top:18px}.icon{width:54px;height:54px;border-radius:18px;background:var(--soft);display:grid;place-items:center;color:var(--green)}
+    h1{font-size:clamp(26px,4vw,40px);line-height:1.08;margin:0;font-weight:800} .lead{margin:7px 0 0;color:var(--muted);line-height:1.65}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}@media(max-width:900px){.grid{grid-template-columns:1fr}.titleRow{align-items:flex-start}}
+    .card{background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:20px;margin-bottom:18px;backdrop-filter:blur(10px)}.card h2{font-size:16px;margin:0 0 14px;font-weight:700;display:flex;gap:8px;align-items:center}.drop{border:2px dashed #43bf71;border-radius:16px;background:#f8fffa;min-height:176px;display:grid;place-items:center;text-align:center;padding:24px;cursor:pointer;transition:.2s}.drop.drag{background:#ebfff0;transform:translateY(-1px)}.drop svg{color:var(--green)}.drop p{margin:8px 0 0}.small{font-size:12px;color:var(--muted)}
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:620px){.fields{grid-template-columns:1fr}} label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}.req{color:var(--danger)} input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit;background:#fff;color:var(--text);outline:none}textarea{min-height:86px;resize:vertical}input:focus,textarea:focus,select:focus{border-color:#58c47e;box-shadow:0 0 0 4px rgba(22,163,74,.12)}
+    .rating{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.star{font-size:24px;color:#cbd5cf;cursor:pointer;user-select:none}.star.active{color:#eab308}.actions{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.seg{display:flex;background:#eef7f1;border:1px solid var(--line);border-radius:13px;padding:4px}.seg button{border:0;background:transparent;border-radius:10px;padding:9px 18px;font-weight:700;cursor:pointer;color:var(--muted)}.seg button.active{background:var(--green);color:white}.btn{border:0;border-radius:13px;background:var(--green);color:white;font-weight:800;padding:13px 18px;cursor:pointer;box-shadow:0 12px 22px rgba(22,163,74,.22)}.btn:hover{background:var(--green2)}.btn:disabled{opacity:.45;cursor:not-allowed}.ghost{background:#eef7f1;color:var(--green);box-shadow:none}.fileList{display:grid;gap:12px}.file{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff}.file img{width:64px;height:54px;object-fit:cover;border-radius:10px;background:#f3f4f6}.file b{display:block;font-size:13px;word-break:break-all}.file span{font-size:12px;color:var(--muted)}.pill{border-radius:999px;background:#effaf2;color:#14833a;padding:6px 9px;font-size:12px;font-weight:700}.status{font-size:13px;color:var(--muted);line-height:1.5}.notice{border-left:4px solid var(--green);background:#f1fbf4;border-radius:13px;padding:12px;color:#315647;font-size:13px;line-height:1.55}.error{color:var(--danger);font-weight:700}.downloadLink{display:inline-flex;margin-top:7px;font-weight:800;color:var(--green);text-decoration:none}.footerNote{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}.verifyBox{margin-top:12px;padding:10px;border-radius:12px;background:#f8fffa;border:1px solid var(--line);font-size:12px;color:#315647;line-height:1.55}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <a class="back" href="#">← Công cụ miễn phí</a>
+      <div class="titleRow">
+        <div class="icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></div>
+        <div><h1>Geotag Hình ảnh</h1><p class="lead">Gắn GPS và thông tin SEO Local vào ảnh. Xử lý trực tiếp trên trình duyệt, không upload ảnh lên server.</p></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>🖼️ Hình ảnh</h2>
+          <div id="drop" class="drop" role="button" tabindex="0">
+            <div>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+              <p><b>Kéo ảnh vào đây hoặc bấm để chọn</b></p>
+              <p class="small">Hỗ trợ JPG, PNG, WebP. Nên dùng JPG nếu cần EXIF GPS chuẩn.</p>
+            </div>
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📍 Vĩ độ (Latitude) / Kinh độ (Longitude)</h2>
+          <div class="fields">
+            <div><label>Vĩ độ (Latitude) <span class="req">*</span></label><input id="lat" type="number" step="any" placeholder="-90 đến 90"></div>
+            <div><label>Kinh độ (Longitude) <span class="req">*</span></label><input id="lng" type="number" step="any" placeholder="-180 đến 180"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Thông tin nâng cao (tuỳ chọn)</h2>
+          <div class="fields">
+            <div><label>Tiêu đề (Title)</label><input id="title" placeholder="VD: Showroom ABC Hà Nội"></div>
+            <div><label>Chủ đề (Subject)</label><input id="subject" placeholder="VD: Dịch vụ nội thất"></div>
+            <div><label>Từ khoá (Keywords)</label><input id="keywords" placeholder="geotag, local seo, thương hiệu"></div>
+            <div><label>Bản quyền (Copyright)</label><input id="copyright" placeholder="© Tên thương hiệu"></div>
+            <div><label>Tác giả (Author)</label><input id="author" placeholder="Tên tác giả hoặc công ty"></div>
+            <div><label>Ngày chụp (Date)</label><input id="date" type="date"></div>
+          </div>
+          <div style="margin-top:14px"><label>Ghi chú (Comment)</label><textarea id="comment" placeholder="Mô tả địa điểm, chi nhánh, dịch vụ..."></textarea></div>
+          <div style="margin-top:14px" class="rating"><b>Đánh giá (Rating):</b><span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span><span id="ratingText" class="small">0/5</span></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <div class="actions">
+            <div><h2 style="margin-bottom:8px">Định dạng đầu ra</h2><div class="seg"><button id="jpgBtn" class="active" type="button">JPG</button><button id="pngBtn" type="button">PNG</button><button id="webpBtn" type="button">WebP</button></div></div>
+            <button id="processBtn" class="btn" disabled>Geotag ảnh</button>
+          </div>
+          <p class="notice">JPG sẽ được ghi EXIF GPS bằng piexifjs. PNG sẽ được ghi metadata dạng text chunks. WebP sẽ xuất ảnh WebP đã xử lý; metadata WebP trong trình duyệt có giới hạn nên nên dùng JPG nếu cần GPS EXIF chuẩn.</p>
+        </div>
+        <div class="card">
+          <h2>Danh sách ảnh</h2>
+          <div id="fileList" class="fileList"><p class="status">Chưa có ảnh nào.</p></div>
+        </div>
+        <div class="card">
+          <h2>Kết quả</h2>
+          <p id="status" class="status">Nhập toạ độ, chọn ảnh rồi bấm “Geotag ảnh”.</p>
+          <div id="verify" class="verifyBox" style="display:none"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button id="zipBtn" class="btn ghost" disabled>Tải tất cả ZIP</button><button id="clearBtn" class="btn ghost">Xoá</button></div>
+        </div>
+      </aside>
+    </section>
+    <p class="footerNote">Tool demo độc lập: toàn bộ xử lý bằng JavaScript trong trình duyệt.</p>
+  </main>
+
+<script>
+const $ = id => document.getElementById(id);
+const drop = $('drop'), fileInput = $('fileInput'), fileList = $('fileList'), processBtn = $('processBtn'), statusEl = $('status'), verifyEl = $('verify'), zipBtn = $('zipBtn');
+let files = [], output = 'jpg', rating = 0, results = [];
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+fileInput.addEventListener('change', e => addFiles([...e.target.files]));
+$('jpgBtn').onclick = () => setOutput('jpg'); $('pngBtn').onclick = () => setOutput('png'); $('webpBtn').onclick = () => setOutput('webp'); $('webpBtn').onclick = () => setOutput('webp');
+$('clearBtn').onclick = () => { files=[]; results=[]; renderFiles(); updateButtons(); statusEl.textContent='Đã xoá danh sách.'; verifyEl.style.display='none'; verifyEl.innerHTML=''; zipBtn.disabled=true; };
+zipBtn.onclick = downloadZip;
+document.querySelectorAll('.star').forEach(s => s.onclick = () => setRating(+s.dataset.v));
+processBtn.onclick = processAll;
+['lat','lng'].forEach(id => $(id).addEventListener('input', updateButtons));
+
+function setOutput(type){ output=type; $('jpgBtn').classList.toggle('active', type==='jpg'); $('pngBtn').classList.toggle('active', type==='png'); $('webpBtn').classList.toggle('active', type==='webp'); }
+function setRating(v){ rating = rating === v ? 0 : v; document.querySelectorAll('.star').forEach(s => s.classList.toggle('active', +s.dataset.v <= rating)); $('ratingText').textContent = rating + '/5'; }
+function addFiles(list){ const valid = list.filter(f => /^image\/(jpeg|png|webp)$/.test(f.type)); files.push(...valid); renderFiles(); updateButtons(); }
+function updateButtons(){ processBtn.disabled = !(files.length && validCoords()); }
+function validCoords(){ const lat=+$('lat').value, lng=+$('lng').value; return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180; }
+function renderFiles(){ if(!files.length){ fileList.innerHTML='<p class="status">Chưa có ảnh nào.</p>'; return; } fileList.innerHTML=''; files.forEach((f,i)=>{ const url=URL.createObjectURL(f); const row=document.createElement('div'); row.className='file'; row.innerHTML=`<img src="${url}" alt=""><div><b>${escapeHtml(f.name)}</b><span>${f.type || 'image'} · ${formatBytes(f.size)}</span></div><button class="pill" data-i="${i}">Xoá</button>`; row.querySelector('button').onclick=()=>{files.splice(i,1);renderFiles();updateButtons();}; fileList.appendChild(row); }); }
+function formatBytes(n){ return n<1024? n+' B' : n<1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(1)+' MB'; }
+function slugFilePart(s){ return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^a-zA-Z0-9._ -]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-'); }
+function buildOutputBaseName(originalName, title){ const originalBase = originalName.replace(/\.[^.]+$/,''); const safeOriginal = slugFilePart(originalBase) || 'image'; const safeTitle = slugFilePart(title); return safeTitle ? safeTitle + '-' + safeOriginal : safeOriginal; }
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function meta(){ return {lat:+$('lat').value,lng:+$('lng').value,title:$('title').value.trim(),subject:$('subject').value.trim(),keywords:$('keywords').value.trim(),copyright:$('copyright').value.trim(),author:$('author').value.trim(),date:$('date').value,comment:$('comment').value.trim(),rating}; }
+async function processAll(){ if(!validCoords()) return showErr('Toạ độ không hợp lệ.'); results=[]; verifyEl.style.display='none'; verifyEl.innerHTML=''; statusEl.textContent='Đang xử lý...'; processBtn.disabled=true; try{ for(let i=0;i<files.length;i++){ statusEl.textContent=`Đang geotag ${i+1}/${files.length}: ${files[i].name}`; results.push(await processImage(files[i], meta(), output)); } renderResults(); renderVerify(meta(), output); zipBtn.disabled = results.length < 2; }catch(e){ showErr(e.message || String(e)); } finally{ updateButtons(); } }
+function showErr(msg){ statusEl.innerHTML='<span class="error">'+escapeHtml(msg)+'</span>'; }
+function readAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function loadImage(src){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=()=>rej(new Error('Không đọc được ảnh.')); img.src=src; }); }
+async function processImage(file, m, type){ const src=await readAsDataURL(file); const img=await loadImage(src); const canvas=document.createElement('canvas'); canvas.width=img.naturalWidth; canvas.height=img.naturalHeight; const ctx=canvas.getContext('2d'); if(type==='jpg'){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); } ctx.drawImage(img,0,0); const base = buildOutputBaseName(file.name, m.title); if(type==='jpg'){ const dataUrl = canvas.toDataURL('image/jpeg', .92); const exifData = buildExif(m); const inserted = piexif.insert(piexif.dump(exifData), dataUrl); return {name: base + '-geotag.jpg', blob:dataURLtoBlob(inserted), url:inserted}; }
+  if(type==='webp'){ const blob = await new Promise(res=>canvas.toBlob(res,'image/webp', .92)); if(!blob) throw new Error('Trình duyệt này không hỗ trợ xuất WebP.'); return {name: base + '-geotag.webp', blob, url:URL.createObjectURL(blob)}; }
+  const blob = await new Promise(res=>canvas.toBlob(res,'image/png')); const arr = new Uint8Array(await blob.arrayBuffer()); const tagged = insertPngTextChunks(arr, buildPngText(m)); const outBlob = new Blob([tagged], {type:'image/png'}); return {name: base + '-geotag.png', blob:outBlob, url:URL.createObjectURL(outBlob)}; }
+function dataURLtoBlob(dataURL){ const [head, body]=dataURL.split(','); const mime=head.match(/:(.*?);/)[1]; const bin=atob(body); const u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); return new Blob([u8],{type:mime}); }
+function utf16leBytes(str){ const out=[]; for(let i=0;i<str.length;i++){ const c=str.charCodeAt(i); out.push(c & 255, c >> 8); } out.push(0,0); return out; }
+function asciiBytes(str){ return Array.from(String(str || ''), ch => ch.charCodeAt(0) & 255); }
+function buildExif(m){ const zeroth={}, exif={}, gps={};
+  const title = m.title || '';
+  const subject = m.subject || '';
+  const keywords = m.keywords || '';
+  const author = m.author || '';
+  const comment = m.comment || '';
+  const copyright = m.copyright || '';
+
+  if(title) zeroth[piexif.ImageIFD.ImageDescription] = title;
+  if(author) zeroth[piexif.ImageIFD.Artist] = author;
+  if(copyright) zeroth[piexif.ImageIFD.Copyright] = copyright;
+
+  // Windows Explorer reads these XP* tags in Details tab
+  if(title) zeroth[40091] = utf16leBytes(title);       // XPTitle
+  if(comment) zeroth[40092] = utf16leBytes(comment);   // XPComment
+  if(author) zeroth[40093] = utf16leBytes(author);     // XPAuthor
+  if(keywords) zeroth[40094] = utf16leBytes(keywords); // XPKeywords / Tags
+  if(subject) zeroth[40095] = utf16leBytes(subject);   // XPSubject
+
+  if(comment) exif[piexif.ExifIFD.UserComment] = asciiBytes('ASCII\0\0\0' + comment);
+  if(m.date) exif[piexif.ExifIFD.DateTimeOriginal] = m.date.replaceAll('-',':') + ' 00:00:00';
+
+  gps[piexif.GPSIFD.GPSVersionID] = [2,3,0,0];
+  gps[piexif.GPSIFD.GPSLatitudeRef] = m.lat < 0 ? 'S' : 'N';
+  gps[piexif.GPSIFD.GPSLatitude] = toDmsRational(Math.abs(m.lat));
+  gps[piexif.GPSIFD.GPSLongitudeRef] = m.lng < 0 ? 'W' : 'E';
+  gps[piexif.GPSIFD.GPSLongitude] = toDmsRational(Math.abs(m.lng));
+  gps[piexif.GPSIFD.GPSMapDatum] = 'WGS-84';
+  if(m.date) gps[piexif.GPSIFD.GPSDateStamp] = m.date.replaceAll('-',':');
+
+  return {'0th':zeroth, Exif:exif, GPS:gps, '1st':{}, thumbnail:null};
+}
+function toDmsRational(dec){ const deg=Math.floor(dec); const minFloat=(dec-deg)*60; const min=Math.floor(minFloat); const sec=(minFloat-min)*60; return [[deg,1],[min,1],[Math.round(sec*10000),10000]]; }
+function buildPngText(m){ return {Title:m.title,Subject:m.subject,Keywords:m.keywords,Author:m.author,Copyright:m.copyright,Comment:m.comment,Rating:String(m.rating||''),DateCreated:m.date,GPSLatitude:String(m.lat),GPSLongitude:String(m.lng),GPSPosition:`${m.lat},${m.lng}`,GPSMapDatum:'WGS-84'}; }
+function insertPngTextChunks(bytes, pairs){ const sig=bytes.slice(0,8); const chunks=[]; let p=8; while(p<bytes.length){ const len=readU32(bytes,p); const type=String.fromCharCode(...bytes.slice(p+4,p+8)); if(type==='IEND'){ Object.entries(pairs).filter(([,v])=>v).forEach(([k,v])=>chunks.push(makeChunk('tEXt', latin1(k+'\0'+v)))); } chunks.push(bytes.slice(p,p+12+len)); p += 12+len; } return concat([sig,...chunks]); }
+function readU32(b,p){ return ((b[p]<<24)|(b[p+1]<<16)|(b[p+2]<<8)|b[p+3])>>>0; }
+function writeU32(n){ return new Uint8Array([(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]); }
+function latin1(s){ const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i)&255; return u; }
+function makeChunk(type, data){ const t=latin1(type); const crc=crc32(concat([t,data])); return concat([writeU32(data.length),t,data,writeU32(crc)]); }
+function concat(arrs){ const len=arrs.reduce((a,b)=>a+b.length,0); const out=new Uint8Array(len); let o=0; arrs.forEach(a=>{out.set(a,o);o+=a.length}); return out; }
+let crcTable=null; function crc32(buf){ if(!crcTable){ crcTable=Array.from({length:256},(_,n)=>{ let c=n; for(let k=0;k<8;k++) c=((c&1)?(0xedb88320^(c>>>1)):(c>>>1)); return c>>>0; }); } let c=0xffffffff; for(const b of buf) c=crcTable[(c^b)&255]^(c>>>8); return (c^0xffffffff)>>>0; }
+function renderVerify(m, type){ verifyEl.style.display='block'; const gpsText = `${m.lat}, ${m.lng}`; const note = type === 'jpg' ? 'JPG đã được ghi GPS EXIF chuẩn. Trong Windows Properties, hãy kéo xuống gần cuối tab Details để xem mục GPS.' : 'Định dạng này không được Windows hiển thị GPS EXIF chuẩn như JPG. Hãy dùng JPG để kiểm tra GPS chắc nhất.'; verifyEl.innerHTML = `<b>Kiểm tra sau xử lý:</b><br>Đã ghi GPS: <b>${gpsText}</b><br>Định dạng xuất: <b>${type.toUpperCase()}</b><br>${note}`; }
+function renderResults(){ statusEl.innerHTML = `<b>Hoàn tất ${results.length} ảnh.</b><br>` + results.map(r=>`<a class="downloadLink" download="${r.name}" href="${r.url}">Tải ${r.name}</a>`).join('<br>'); }
+async function downloadZip(){ const zip = new JSZip(); results.forEach(r=>zip.file(r.name, r.blob)); const blob = await zip.generateAsync({type:'blob'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='geotag-images.zip'; a.click(); }
+</script>
+</body>
+</html>
